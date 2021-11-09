@@ -91,7 +91,7 @@ if __name__ == "__main__":
                                 client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
                                 client_connection.sendall("Content-Type: image/png\r\n".encode())
                                 client_connection.sendall("Accept-Ranges: bytes\r\n\r\n".encode())
-                                client_connection.sendall(content)
+                                client_connection.sendall(content) #allready in bytes
                         else:
                             client_connection.sendall(('HTTP/1.1 500'+' Internal Server Error\r\n').encode())
                             client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
