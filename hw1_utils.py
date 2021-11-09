@@ -21,6 +21,7 @@ The first request line (e.g. "GET www.google.com ....") key is 'Request'
 
 input: HTTP raw request, in bytes.
 output: A dictionary of the parsed request 
+
 '''
 def decode_http(http_data):
     http_dict = {}
