@@ -1,0 +1,26 @@
+<html>
+<head>
+    <style>
+    li:not(:last-child) {
+        margin-bottom: 20px;
+    }
+    </style>
+    <title>Home Page</title>
+</head>
+<body>
+    <h1>Landing Page</h1>
+    <p>Welcome to the landing page!</p>
+    <p>choose a .pdf file to generate a wordcloud from:</p>
+    <ul style="list-style-type:disc">
+        <li><button onclick="file_red(1)">file1.pdf</button></li>
+        <li><button onclick="file_red(2)">file2.pdf</button></li>
+        <li><button onclick="file_red(3)">file3.pdf</button></li>
+        <li><button onclick="file_red(4)">file4.pdf</button></li>
+    </ul>
+    <script>
+    function file_red(file_num) {
+    window.location.assign("http://localhost:8888/file" + file_num.toString())
+    }
+    </script>
+</body>
+</html>
