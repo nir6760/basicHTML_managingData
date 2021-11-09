@@ -31,7 +31,7 @@ def create_error_html(error_num):
                 </script >\n\
                 </body>\n\
                 </html>"
-    return error_html#d
+    return error_html
 # handle request method
 def handle_request(request):
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
             with client_connection:
                 # Get the client request
                 request = client_connection.recv(NUM_BYTES_REQUEST)
-                if not request:
+                if not request or request== "\r\n".encode():
                     continue
                 try:
                     status, content = handle_request(request)
@@ -83,8 +83,9 @@ if __name__ == "__main__":
                         if content:
                             if str(content).find("html") > 0:
                                 # Send HTTP response
-                                client_connection.sendall('HTTP/1.1 200 OK\n\n'.encode() + content.encode())
-                                client_connection.sendall("Content-Type: text/html\r\n".encode())
+                                client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                                client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
+                                client_connection.sendall(content.encode())
                             else:  # image
                                 # Send HTTP response
                                 client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
@@ -92,18 +93,20 @@ if __name__ == "__main__":
                                 client_connection.sendall("Accept-Ranges: bytes\r\n\r\n".encode())
                                 client_connection.sendall(content)
                         else:
-                            client_connection.sendall('HTTP/1.1 500'.encode() +' Internal Server Error\n\n'.encode() +
-                                                      create_error_html(500).encode())
+                            client_connection.sendall(('HTTP/1.1 500'+' Internal Server Error\r\n').encode())
+                            client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
+                            client_connection.sendall(create_error_html(500).encode())
                     else:  # 404 or 501
-                        err_str = 'NOT FOUND\n\n' if status==404 else "NOT GET\n\n"
+                        err_str = ' NOT FOUND\r\n' if status==404 else ' NOT GET\r\n'
                         client_connection.sendall(
-                            ('HTTP/1.1 ' + str(status) + err_str).encode() + content.encode())
-                        client_connection.sendall("Content-Type: text/html\r\n".encode())
+                            ('HTTP/1.1 ' + str(status) + err_str).encode())
+                        client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
+                        client_connection.sendall(content.encode())
                 except Exception as e:# 500
                     print(e)
-                    client_connection.sendall('HTTP/1.1 500'.encode() + ' Internal Server Error\n\n'.encode() +
-                                              create_error_html(500).encode())
-                    client_connection.sendall("Content-Type: text/html\r\n".encode())
+                    client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
+                    client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
+                    client_connection.sendall(create_error_html(500).encode())
                 client_connection.close()
     # Close socket
     server_socket.close()
