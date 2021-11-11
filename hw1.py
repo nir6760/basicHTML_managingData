@@ -3,6 +3,7 @@ import os
 import string
 import hw1_utils
 import HTTPHandler
+import time
 
 
 """
@@ -12,7 +13,7 @@ import HTTPHandler
 # Define socket host and port
 SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 8888
-NUM_BYTES_REQUEST = 10240
+NUM_BYTES_REQUEST = 4096
 
 #create error html string
 def create_error_html(error_num):
@@ -32,6 +33,15 @@ def create_error_html(error_num):
                 </body>\n\
                 </html>"
     return error_html
+
+def make_http_time_string(time_struct):
+
+    '''Input struct_time and output HTTP header-type time string'''
+
+    return time.strftime('%a, %d %b %Y %H:%M:%S GMT',
+
+            time_struct)
+
 # handle request method
 def handle_request(request):
 
@@ -84,29 +94,39 @@ if __name__ == "__main__":
                             if str(content).find("html") > 0:
                                 # Send HTTP response
                                 client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                                client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                          + "\r\n").encode())
                                 client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
                                 client_connection.sendall(content.encode())
                             else:  # image
                                 # Send HTTP response
                                 client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                                client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                           + "\r\n").encode())
                                 client_connection.sendall("Content-Type: image/png\r\n".encode())
                                 client_connection.sendall("Accept-Ranges: bytes\r\n\r\n".encode())
                                 client_connection.sendall(content) #allready in bytes
                         else:
                             client_connection.sendall(('HTTP/1.1 500'+' Internal Server Error\r\n').encode())
+                            client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                       + "\r\n").encode())
                             client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
                             client_connection.sendall(create_error_html(500).encode())
                     else:  # 404 or 501
                         err_str = ' NOT FOUND\r\n' if status==404 else ' NOT GET\r\n'
                         client_connection.sendall(
                             ('HTTP/1.1 ' + str(status) + err_str).encode())
+                        client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                   + "\r\n").encode())
                         client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
                         client_connection.sendall(content.encode())
                 except Exception as e:# 500
                     print(e)
                     client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
+                    client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                               + "\r\n").encode())
                     client_connection.sendall("Content-Type: text/html\r\n\r\n".encode())
                     client_connection.sendall(create_error_html(500).encode())
                 client_connection.close()
     # Close socket
-    server_socket.close()
+    #server_socket.close()
