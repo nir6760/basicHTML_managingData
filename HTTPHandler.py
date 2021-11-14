@@ -4,6 +4,7 @@ from pdfminer import high_level
 import pathlib
 from urllib.parse import urlparse
 
+
 # get all pdf files recursively
 def get_all_pdf_files():
     all_files = []
@@ -65,8 +66,10 @@ def create_home_page(all_pdf_files):
         pdf_name = pathlib.Path(*pdf_name.parts[1:])  # remove pdfs// from path
         pdf_name = str(pdf_name)
         # pdf_name = pdf_file_path[5:]
-        pdf_name_without_ext = "\'" + os.path.splitext(pdf_name)[0] + "\'"
-        pdf_name_without_ext = pdf_name_without_ext.replace('\\', '/')
+        pdf_name_without_ext = os.path.splitext(pdf_name)[0]
+        pdf_name_without_ext = '\'' + pdf_name_without_ext + '\''
+        if os.sep == '\\':  # windows
+            pdf_name_without_ext = pdf_name_without_ext.replace('\\', '/')
         content_li = "<li><button onclick=\"myFunction(" + pdf_name_without_ext + ")\">" + pdf_name + "</button></li>\n"
         content += content_li
     content += "</ul>\n\
@@ -84,9 +87,11 @@ def create_home_page(all_pdf_files):
 def pdf_to_wordcloud(pdf_path, stop_words_list):
     pdf_name = os.path.split(pdf_path)[1]
     pdf_string = high_level.extract_text(pdf_path)
+    pdf_string = pdf_string.lower()  # all lower case, wordcloud will be lower case
     pdf_string_filtered = [word for word in pdf_string.split() if not word in stop_words_list]
     pdf_string_filtered = " ".join(pdf_string_filtered)
     saving_folder_png = os.path.join('html_pages', 'png_images')
+    os.makedirs(saving_folder_png, exist_ok=True)
     png_path = os.path.join(saving_folder_png, os.path.splitext(pdf_name)[0] + '.png')
     hw1_utils.generate_wordcloud_to_file(pdf_string_filtered, png_path)
     return png_path
@@ -96,9 +101,9 @@ class HTTPHandler:
     def get(self, filename, file_type):
         with open('stopwords.txt') as text_file:
             stop_words_list = text_file.read().split()
-        # if not os.path.isdir('pdfs'): # pdfs folder doesnt exist
-        #    print('pdfs folder dosn\'t exist')
-        #    raise FileNotFoundError
+        if not os.path.isdir('pdfs'): # pdfs folder doesnt exist
+           print('pdfs folder dosn\'t exist')
+           raise FileNotFoundError
         all_pdf_files = get_all_pdf_files()
         if file_type.find("image") == -1:
             if filename == '/':
