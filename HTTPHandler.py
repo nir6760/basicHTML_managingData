@@ -2,7 +2,7 @@ import os
 import hw1_utils
 from pdfminer import high_level
 import pathlib
-from urllib.parse import unquote
+
 
 
 # get all pdf files recursively
@@ -44,6 +44,11 @@ def create_wordcloud_page(title, png_path):
     return content
 
 
+# find all the position of character in string s
+def find_all_ch_in_s(s, ch):
+    return [i for i, ltr in enumerate(s) if ltr == ch]
+
+
 # create png html file as string
 def create_home_page(all_pdf_files):
     content = "<html>\n\
@@ -61,17 +66,23 @@ def create_home_page(all_pdf_files):
                 <p>choose a .pdf file to generate a wordcloud from:</p>\n\
                 <ul style=\"list-style-type:disc\">\n"
     for pdf_file_path in all_pdf_files:
-        url = unquote(pdf_file_path)
-        # pdf_name = os.path.basename(pdf_file_path)
+
         pdf_name = pathlib.Path(pdf_file_path)
         pdf_name = pathlib.Path(*pdf_name.parts[1:])  # remove pdfs// from path
         pdf_name = str(pdf_name)
         # pdf_name = pdf_file_path[5:]
         pdf_name_without_ext = os.path.splitext(pdf_name)[0]
-        pdf_name_without_ext = '\'' + pdf_name_without_ext + '\''
+
+        pdf_name_without_ext = pdf_name_without_ext
         if os.sep == '\\':  # windows
             pdf_name_without_ext = pdf_name_without_ext.replace('\\', '/')
-        content_li = "<li><button onclick=\"myFunction(" + pdf_name_without_ext + ")\">" + pdf_name + "</button></li>\n"
+        #content_li = "<li><button onclick=\"myFunction(" + pdf_name_without_ext + ")\">" + pdf_name + "</button></li>\n"
+        ul_link = '\"' + "http://localhost:8888/" + pdf_name_without_ext + '\"'
+        content_li = "<li>\n\
+            <a href=" + ul_link + ">\n\
+                <button>" + pdf_name + "</button>\n\
+      </a>\n\
+        </li>\n"
         content += content_li
     content += "</ul>\n\
                 <script>\n\
@@ -103,9 +114,9 @@ class HTTPHandler:
 
         with open('stopwords.txt') as text_file:
             stop_words_list = text_file.read().split()
-        if not os.path.isdir('pdfs'): # pdfs folder doesnt exist
-           print('pdfs folder dosn\'t exist')
-           raise FileNotFoundError
+        if not os.path.isdir('pdfs'):  # pdfs folder doesnt exist
+            print('pdfs folder dosn\'t exist')
+            raise FileNotFoundError
         all_pdf_files = get_all_pdf_files()
         if file_type.find("image") == -1:
             if filename == '/':

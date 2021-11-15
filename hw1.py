@@ -4,6 +4,7 @@ import string
 import hw1_utils
 import HTTPHandler
 import time
+from urllib.parse import unquote
 
 """
  Implements a simple HTTP/1.1 Server
@@ -55,11 +56,13 @@ def handle_request(request):
     # for k, v in dict.items():
     #     print(k, " ------- ", v)
     # print("******************************************************************************")
-    type_content = dict['Accept'].split('/')
+
     # Filename
     req_list = dict['Request'].split()
-    filename = req_list[1]
     try:
+        filename = req_list[1]
+        filename = unquote(filename)
+        type_content = dict['Accept'].split('/')
         if req_list[0] == "GET":
             content = http.get(filename, type_content[0])
             return 200, content, req_list[0]
@@ -71,6 +74,8 @@ def handle_request(request):
         with open(not_found_page) as not_found_file:
             not_found_content = not_found_file.read()
         return 404, not_found_content, req_list[0]
+    except Exception as e:
+        raise Exception
 
 
 if __name__ == "__main__":
@@ -86,60 +91,58 @@ if __name__ == "__main__":
                 # Get the client request
                 request = client_connection.recv(NUM_BYTES_REQUEST)
                 if not request or request == "\r\n".encode():
-                    client_connection.close()
-                    continue
-                try:
-                    status, content, req = handle_request(request)
-                    # Send HTTP response
-                    if status == 200:
-                        if content:
-                            if str(content).find("html") > 0:
-                                # Send HTTP response
-                                dec_con = content.encode()
-                                client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                    pass
+                else:
+                    try:
+                        status, content, req = handle_request(request)
+                        # Send HTTP response
+                        if status == 200:
+                            if content:
+                                if str(content).find("html") > 0:
+                                    # Send HTTP response
+                                    dec_con = content.encode()
+                                    client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                                    client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                               + "\r\n").encode())
+                                    client_connection.sendall("Content-Type: text/html\r\n".encode())
+                                    client_connection.sendall(f"Content-Length: {len(dec_con)}\r\n\r\n".encode())
+                                    client_connection.sendall(dec_con)
+                                else:  # image
+                                    # Send HTTP response
+                                    client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
+                                    client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
+                                                               + "\r\n").encode())
+                                    client_connection.sendall("Content-Type: image/png\r\n".encode())
+                                    client_connection.sendall("Accept-Ranges: bytes\r\n".encode())
+                                    client_connection.sendall(f"Content-Length: {len(content)}\r\n\r\n".encode())
+                                    client_connection.sendall(content)  # allready in bytes
+                            else:
+                                dec_con = create_error_html(500).encode()
+                                client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
                                 client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
                                                            + "\r\n").encode())
                                 client_connection.sendall("Content-Type: text/html\r\n".encode())
                                 client_connection.sendall(f"Content-Length: {len(dec_con)}\r\n\r\n".encode())
                                 client_connection.sendall(dec_con)
-                            else:  # image
-                                # Send HTTP response
-                                client_connection.sendall('HTTP/1.1 200 OK\r\n'.encode())
-                                client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
-                                                           + "\r\n").encode())
-                                client_connection.sendall("Content-Type: image/png\r\n".encode())
-                                client_connection.sendall("Accept-Ranges: bytes\r\n".encode())
-                                client_connection.sendall(f"Content-Length: {len(content)}\r\n\r\n".encode())
-                                client_connection.sendall(content)  # allready in bytes
-                        else:
-                            dec_con = create_error_html(500).encode()
-                            client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
+                        else:  # 404 or 501
+                            dec_con = content.encode()
+                            err_str = ' NOT FOUND\r\n' if status == 404 else ' NOT GET\r\n'
+                            client_connection.sendall(
+                                ('HTTP/1.1 ' + str(status) + err_str).encode())
                             client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
                                                        + "\r\n").encode())
                             client_connection.sendall("Content-Type: text/html\r\n".encode())
                             client_connection.sendall(f"Content-Length: {len(dec_con)}\r\n\r\n".encode())
-                            client_connection.sendall(dec_con)
-                    else:  # 404 or 501
-                        dec_con = content.encode()
-                        err_str = ' NOT FOUND\r\n' if status == 404 else ' NOT GET\r\n'
-                        client_connection.sendall(
-                            ('HTTP/1.1 ' + str(status) + err_str).encode())
+                            if req != "HEAD":  # head must ignore body, so the client could parse it
+                                client_connection.sendall(dec_con)
+                    except Exception as e:  # 500
+                        print(e)
+                        dec_con = create_error_html(500).encode()
+                        client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
                         client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
                                                    + "\r\n").encode())
                         client_connection.sendall("Content-Type: text/html\r\n".encode())
                         client_connection.sendall(f"Content-Length: {len(dec_con)}\r\n\r\n".encode())
-                        if req != "HEAD":  # head must ignore body, so the client could parse it
-                            client_connection.sendall(dec_con)
-                except Exception as e:  # 500
-                    print(e)
-                    dec_con = create_error_html(500).encode()
-                    client_connection.sendall(('HTTP/1.1 500' + ' Internal Server Error\r\n').encode())
-                    client_connection.sendall(("Date: " + make_http_time_string(time.localtime())
-                                               + "\r\n").encode())
-                    client_connection.sendall("Content-Type: text/html\r\n".encode())
-                    client_connection.sendall(f"Content-Length: {len(dec_con)}\r\n\r\n".encode())
-                    client_connection.sendall(dec_con)
-                finally:
-                    client_connection.close()
+                        client_connection.sendall(dec_con)
     # Close socketn
     # server_socket.close()
