@@ -85,11 +85,6 @@ def create_home_page(all_pdf_files):
         </li>\n"
         content += content_li
     content += "</ul>\n\
-                <script>\n\
-                function myFunction(file_name){\n\
-                    location.replace(\"http://localhost:8888/\" + file_name);\n\
-                }\n\
-                </script>\n\
             </body>\n\
             </html>"
     return content
