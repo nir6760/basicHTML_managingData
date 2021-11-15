@@ -2,7 +2,7 @@ import os
 import hw1_utils
 from pdfminer import high_level
 import pathlib
-from urllib.parse import urlparse
+from urllib.parse import unquote
 
 
 # get all pdf files recursively
@@ -61,6 +61,7 @@ def create_home_page(all_pdf_files):
                 <p>choose a .pdf file to generate a wordcloud from:</p>\n\
                 <ul style=\"list-style-type:disc\">\n"
     for pdf_file_path in all_pdf_files:
+        url = unquote(pdf_file_path)
         # pdf_name = os.path.basename(pdf_file_path)
         pdf_name = pathlib.Path(pdf_file_path)
         pdf_name = pathlib.Path(*pdf_name.parts[1:])  # remove pdfs// from path
@@ -99,6 +100,7 @@ def pdf_to_wordcloud(pdf_path, stop_words_list):
 
 class HTTPHandler:
     def get(self, filename, file_type):
+
         with open('stopwords.txt') as text_file:
             stop_words_list = text_file.read().split()
         if not os.path.isdir('pdfs'): # pdfs folder doesnt exist
